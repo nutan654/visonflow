@@ -7,7 +7,7 @@
 ![MySQL](https://img.shields.io/badge/mysql-%2300f.svg?style=for-the-badge&logo=mysql&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
 
-**VisionFlow** is a containerized, microservice-driven prototype built for Fujipixy's 2026 Engineering Internship. It seamlessly merges a patient medical record system (CRM) with a dynamic eyewear e-commerce storefront.
+**VisionFlow** is a containerized, microservice-driven prototype . It seamlessly merges a patient medical record system (CRM) with a dynamic eyewear e-commerce storefront.
 
 ## ✨ Key Features
 * **Microservice Architecture:** Decoupled PHP/Apache backend and a Python/FastAPI predictive engine.
