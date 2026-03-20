@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | AI Sales Trends</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .dashboard-container {
+            max-width: 1100px;
+            margin: 2rem auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        .card-panel {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .insight-box {
+            background: #fff8e1;
+            border-left: 4px solid #f1c40f;
+            padding: 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin-top: 1.5rem;
+        }
+        .insight-box h3 {
+            color: #b8860b;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            border-bottom: 1px solid #eee;
+        }
+        .growth-up { color: #27ae60; font-weight: bold; }
+        .growth-down { color: #e74c3c; font-weight: bold; }
+        
+        .simulator-control {
+            margin-bottom: 1.2rem;
+        }
+        .simulator-control label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #444;
+        }
+        .simulator-control input[type=range] {
+            width: 100%;
+            cursor: pointer;
+            accent-color: #1a1a1a; 
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html" class="active">Sales Trends</a></li>
+            
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h2>AI Sales Forecaster</h2>
+                <p style="color: #666; margin-top: 0.5rem;">Interactive Trend Simulation Dashboard</p>
+            </div>
+            <button style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;" onclick="logout()">Logout</button>
+        </div>
+
+        <div class="dashboard-container">
+            <div>
+                <div class="card-panel" style="margin-bottom: 2rem;">
+                    <h3 style="margin-bottom: 1.5rem; color: #333;">Predicted Frame Popularity (<span id="targetMonth">Loading...</span>)</h3>
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <div class="card-panel">
+                    <h3 style="margin-bottom: 1.5rem; color: #333;">🎛️ Live Scenario Simulator</h3>
+                    <p style="color: #666; margin-bottom: 1.5rem; font-size: 0.9rem;">Adjust the values below to see how marketing campaigns might affect the trend forecast in real-time.</p>
+                    
+                    <div class="simulator-control">
+                        <label>Aviator Demand <span id="val-0">88</span></label>
+                        <input type="range" id="slider-0" min="0" max="100" value="88" oninput="updateChartLive(0, this.value)">
+                    </div>
+                    <div class="simulator-control">
+                        <label>Round Demand <span id="val-1">72</span></label>
+                        <input type="range" id="slider-1" min="0" max="100" value="72" oninput="updateChartLive(1, this.value)">
+                    </div>
+                    <div class="simulator-control">
+                        <label>Square Demand <span id="val-2">55</span></label>
+                        <input type="range" id="slider-2" min="0" max="100" value="55" oninput="updateChartLive(2, this.value)">
+                    </div>
+                    <div class="simulator-control">
+                        <label>Cat-Eye Demand <span id="val-3">40</span></label>
+                        <input type="range" id="slider-3" min="0" max="100" value="40" oninput="updateChartLive(3, this.value)">
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-panel" style="height: fit-content;">
+                <h3 style="margin-bottom: 1.5rem; color: #333;">Initial API Metrics</h3>
+                <div id="metricsContainer">
+                    <p style="color: #777; font-style: italic;">Connecting to Python server...</p>
+                </div>
+
+                <div class="insight-box">
+                    <h3>💡 AI Recommendation</h3>
+                    <p id="aiInsight" style="font-size: 0.95rem; line-height: 1.5; color: #555;">Analyzing data...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+   <script>
+    if (!localStorage.getItem("user")) window.location.href = "login.html";
+
+    async function logout() {
+        try {
+            await fetch('logout_api.php');
+            localStorage.removeItem("user");
+            window.location.href = "login.html";
+        } catch (e) { console.error(e); }
+    }
+
+    let myLiveChart = null;
+    let baselineData = []; 
+    const shapeNames = ["Aviator", "Round", "Square", "Cat-Eye"];
+
+    async function fetchTrends() {
+        try {
+            const response = await fetch('http://127.0.0.1:8000/api/trends');
+            const data = await response.json();
+
+            if(data.status === "success") {
+                document.getElementById('targetMonth').textContent = data.target_month;
+                document.getElementById('aiInsight').textContent = data.ai_insight;
+
+                baselineData = data.predictions; 
+
+                renderMetrics(baselineData);
+                renderChart(baselineData);
+            }
+        } catch (error) {
+            console.error("Failed to fetch from Python API:", error);
+            document.getElementById('metricsContainer').innerHTML = '<p style="color:red;">Error: Ensure python predictor.py is running.</p>';
+        }
+    }
+
+    function renderMetrics(predictions) {
+        const container = document.getElementById('metricsContainer');
+        container.innerHTML = ''; 
+
+        predictions.forEach((item, index) => {
+            const growthClass = item.growth.includes('+') ? 'growth-up' : 'growth-down';
+            container.innerHTML += `
+                <div class="stat-row">
+                    <span style="font-weight: 500;">${item.shape}</span>
+                    <span id="metric-${index}" class="${growthClass}">${item.growth}</span>
+                </div>
+            `;
+        });
+    }
+
+    function renderChart(predictions) {
+        const ctx = document.getElementById('trendChart').getContext('2d');
+        const labels = predictions.map(p => p.shape);
+        const scores = predictions.map(p => p.trend_score);
+
+        myLiveChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Trend Score (0-150)',
+                    data: scores,
+                    backgroundColor: [
+                        'rgba(241, 196, 15, 0.8)', 
+                        'rgba(52, 152, 219, 0.8)', 
+                        'rgba(149, 165, 166, 0.8)', 
+                        'rgba(231, 76, 60, 0.8)'   
+                    ],
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 150 }
+                },
+                animation: { duration: 200 }
+            }
+        });
+    }
+
+    function updateChartLive(index, newValue) {
+        if (myLiveChart && baselineData.length > 0) {
+            const currentVal = parseInt(newValue);
+            const baselineVal = baselineData[index].trend_score;
+
+            myLiveChart.data.datasets[0].data[index] = currentVal;
+            myLiveChart.update();
+
+            document.getElementById(`val-${index}`).textContent = currentVal;
+
+            let growthPercent = Math.round(((currentVal - baselineVal) / baselineVal) * 100);
+            let metricSpan = document.getElementById(`metric-${index}`);
+            
+            if (metricSpan) {
+                if (growthPercent >= 0) {
+                    metricSpan.textContent = `+${growthPercent}%`;
+                    metricSpan.className = 'growth-up';
+                } else {
+                    metricSpan.textContent = `${growthPercent}%`;
+                    metricSpan.className = 'growth-down';
+                }
+            }
+
+            generateDynamicInsight();
+        }
+    }
+
+    function generateDynamicInsight() {
+        let currentData = myLiveChart.data.datasets[0].data;
+        let maxIndex = 0;
+        let maxVal = currentData[0];
+
+        for(let i=1; i<currentData.length; i++) {
+            if(currentData[i] > maxVal) {
+                maxVal = currentData[i];
+                maxIndex = i;
+            }
+        }
+
+        let topShape = shapeNames[maxIndex];
+        document.getElementById('aiInsight').textContent = `System Alert: Demand for ${topShape} frames is currently peaking. High probability of stockout within 14 days based on current growth.`;
+    }
+
+    fetchTrends();
+</script>
+</body>
+</html>

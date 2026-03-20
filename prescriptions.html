@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Optician Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 800px; 
+            margin: 2rem auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            border-left: 4px solid #1a1a1a;
+        }
+        .form-section h3 {
+            margin-bottom: 1rem;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+            color: #555;
+        }
+        .form-group input, .form-group select {
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #f1c40f;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(241, 196, 15, 0.2);
+        }
+        .submit-btn {
+            background: #1a1a1a;
+            color: white;
+            padding: 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease;
+            font-weight: bold;
+        }
+        .submit-btn:hover {
+            background: #f1c40f;
+            color: #1a1a1a;
+        }
+        #statusMessage {
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: bold;
+            padding: 0.5rem;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h2>Optician Input Portal</h2>
+                <button style="background: #e74c3c; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;" onclick="logout()">Logout</button>
+            </div>
+
+            <form id="rxForm">
+                <div class="form-section">
+                    <h3>Patient Demographics</h3>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>First Name</label>
+                            <input type="text" id="firstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name</label>
+                            <input type="text" id="lastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="phone" pattern="[0-9]{10}" maxlength="10" title="Please enter exactly 10 digits" placeholder="e.g. 9876543210" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h3>Optical Data (Rx)</h3>
+                    
+                    <div class="grid-2" style="margin-bottom: 1rem;">
+                        <div class="form-group">
+                            <label>Eye</label>
+                            <select id="eyeType" required>
+                                <option value="OD">OD - Right Eye (Oculus Dexter)</option>
+                                <option value="OS">OS - Left Eye (Oculus Sinister)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Exam Date</label>
+                            <input type="date" id="examDate" required>
+                        </div>
+                    </div>
+
+                    <div class="grid-4">
+                        <div class="form-group">
+                            <label>Sphere (SPH)</label>
+                            <input type="number" id="sphere" step="0.25" placeholder="e.g. -1.50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Cylinder (CYL)</label>
+                            <input type="number" id="cylinder" step="0.25" placeholder="e.g. -0.50" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Axis</label>
+                            <input type="number" id="axis" min="0" max="180" placeholder="0-180" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Pupillary Dist. (PD)</label>
+                            <input type="number" id="pd" step="0.5" placeholder="e.g. 31.0" required>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn">Securely Save Prescription</button>
+                <div id="statusMessage"></div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        if (!localStorage.getItem("user")) window.location.href = "login.html";
+
+        async function logout() {
+            try {
+                await fetch('logout_api.php');
+                localStorage.removeItem("user");
+                window.location.href = "login.html";
+            } catch (e) { console.error(e); }
+        }
+
+        document.getElementById('examDate').valueAsDate = new Date();
+
+        document.getElementById('rxForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.style.background = "#fff3cd";
+            statusDiv.style.color = "#856404";
+            statusDiv.textContent = "Processing medical record...";
+            const phoneValue = document.getElementById('phone').value;
+            const phoneRegex = /^[0-9]{10}$/; 
+            
+            if (!phoneRegex.test(phoneValue)) {
+                statusDiv.style.background = "#f8d7da";
+                statusDiv.style.color = "#721c24";
+                statusDiv.textContent = "❌ Error: Phone number must be exactly 10 digits.";
+                return; 
+            }
+            
+            const rxData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                eye_type: document.getElementById('eyeType').value,
+                sphere: parseFloat(document.getElementById('sphere').value),
+                cylinder: parseFloat(document.getElementById('cylinder').value),
+                axis: parseInt(document.getElementById('axis').value),
+                pd: parseFloat(document.getElementById('pd').value),
+                exam_date: document.getElementById('examDate').value
+            };
+
+            try {
+                const response = await fetch('add_prescription_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(rxData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.style.background = "#d4edda";
+                    statusDiv.style.color = "#155724";
+                    statusDiv.textContent = "✅ " + result.message;
+                    
+                    document.getElementById('sphere').value = '';
+                    document.getElementById('cylinder').value = '';
+                    document.getElementById('axis').value = '';
+                    
+                    const eyeSelect = document.getElementById('eyeType');
+                    if(eyeSelect.value === 'OD') {
+                        eyeSelect.value = 'OS';
+                        statusDiv.textContent += " (Ready for Left Eye input)";
+                    } else {
+                        eyeSelect.value = 'OD';
+                    }
+
+                } else {
+                    statusDiv.style.background = "#f8d7da";
+                    statusDiv.style.color = "#721c24";
+                    statusDiv.textContent = "❌ Error: " + result.message;
+                }
+            } catch (error) {
+                console.error(error);
+                statusDiv.style.background = "#f8d7da";
+                statusDiv.style.color = "#721c24";
+                statusDiv.textContent = "❌ Network error. Check XAMPP server.";
+            }
+        });
+    </script>
+</body>
+</html>

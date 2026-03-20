@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Virtual Catalog</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2.5rem; margin-top: 2rem; }
+
+
+.product-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    transition: 0.4s;
+    overflow: hidden;
+    position: relative;
+    animation: floatCard 4s ease-in-out infinite;
+}
+
+.product-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+
+.img-container {
+    width: 100%;
+    height: 180px;
+    overflow: hidden;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #f8f9fa, #eef1f5);
+    perspective: 1000px;
+    position: relative;
+}
+
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    transform-style: preserve-3d;
+}
+
+
+.product-card:hover .product-image {
+    transform: scale(1.1) rotateY(12deg) rotateX(6deg);
+}
+
+.img-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -75%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(
+        120deg,
+        rgba(255,255,255,0) 0%,
+        rgba(255,255,255,0.4) 50%,
+        rgba(255,255,255,0) 100%
+    );
+    transform: skewX(-20deg);
+}
+
+.product-card:hover .img-container::after {
+    animation: shine 1s ease forwards;
+}
+
+@keyframes shine {
+    100% { left: 125%; }
+}
+
+
+@keyframes floatCard {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.product-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.2rem; color: #333; }
+.product-meta { font-size: 0.85rem; color: #777; text-transform: uppercase; margin-bottom: 0.8rem; }
+.product-price { font-size: 1.3rem; font-weight: bold; color: #1a1a1a; margin-bottom: 1.2rem; }
+
+.btn-group { display: flex; gap: 0.5rem; }
+
+.btn-quick {
+    background: #f1f1f1;
+    color: #333;
+    border: none;
+    padding: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    flex: 1;
+    transition: 0.3s;
+}
+.btn-quick:hover { background: #ddd; }
+
+.btn-cart {
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    padding: 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    flex: 1;
+    transition: 0.3s;
+}
+.btn-cart:hover { background: #f1c40f; color: #1a1a1a; }
+
+.empty-catalog {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    background: white;
+    border-radius: 12px;
+    color: #777;
+}
+
+.cart {
+    cursor: pointer;
+    background: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease-in-out;
+}
+.cart:hover { color: #f1c40f; }
+
+.flying-img {
+    position: fixed;
+    z-index: 9999;
+    border-radius: 8px;
+    object-fit: cover;
+    pointer-events: none;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); align-items: center; justify-content: center; }
+.modal-content { background: white; padding: 2rem; border-radius: 12px; max-width: 500px; width: 90%; text-align: center; position: relative; animation: popIn 0.3s ease-out; }
+@keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.close-btn { position: absolute; top: 15px; right: 20px; font-size: 1.5rem; cursor: pointer; color: #777; transition: 0.3s; }
+.close-btn:hover { color: #e74c3c; transform: scale(1.2); }
+.modal-img { width: 100%; height: 250px; object-fit: cover; border-radius: 8px; margin-bottom: 1.5rem; }
+</style>
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html" class="active" data-i18n="nav_catalog">Virtual Catalog</a></li>
+            <li><a href="inventory.html" data-i18n="nav_inventory">Inventory Dashboard</a></li>
+            <li><a href="patients.html" data-i18n="nav_patients">Patient Records</a></li>
+            <li><a href="prescriptions.html" data-i18n="nav_rx">Input Prescription</a></li>
+            <li><a href="trends.html" data-i18n="nav_trends">Sales Trends</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 2rem; background: white; margin-bottom: 2rem; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <h2 style="color: #1a1a1a;">VisionFlow</h2>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button id="langToggle" onclick="toggleLanguage()" style="background: #f1f1f1; border: none; padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s;">🇯🇵 日本語</button>
+                
+                <span style="color: #666;">Hi, admin</span>
+                <button style="background: #e74c3c; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;" onclick="logout()">Logout</button>
+                <div class="cart" id="cartIcon" onclick="window.location.href='cart.html'" style="font-size: 1.2rem; cursor: pointer;">
+                    🛒 <span id="cartCount" style="font-weight: bold; color: #f1c40f;">0</span>
+                </div>
+            </div>
+        </div>
+
+        <section class="hero" style="background: #1a1a1a; color: white; padding: 3rem; border-radius: 12px; text-align: center; margin-bottom: 2rem;">
+            <h1 style="color: #f1c40f; margin-bottom: 0.5rem;" data-i18n="title_main">Find Your Perfect Frame</h1>
+            <p style="margin-bottom: 1.5rem;" data-i18n="subtitle_main">Stylish. Smart. You.</p>
+        </section>
+
+        <header style="margin-bottom: 1rem;">
+            <h3 data-i18n="title_collection">Eyewear Collection</h3>
+            <p style="color: #666;" data-i18n="subtitle_collection">Filter and find the perfect frames.</p>
+        </header>
+
+        <section class="filters" style="display: flex; gap: 2rem; background: white; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <div class="filter-group">
+                <label for="shapeFilter" style="font-weight: bold; margin-right: 0.5rem;">Shape:</label>
+                <select id="shapeFilter" style="padding: 0.5rem; border-radius: 4px;">
+                    <option value="all">All Shapes</option>
+                    <option value="round">Round</option>
+                    <option value="square">Square</option>
+                    <option value="aviator">Aviator</option>
+                    <option value="cat-eye">Cat-Eye</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="materialFilter" style="font-weight: bold; margin-right: 0.5rem;">Material:</label>
+                <select id="materialFilter" style="padding: 0.5rem; border-radius: 4px;">
+                    <option value="all">All Materials</option>
+                    <option value="acetate">Acetate</option>
+                    <option value="metal">Metal</option>
+                    <option value="titanium">Titanium</option>
+                </select>
+            </div>
+            <div class="filter-group" style="flex-grow: 1;">
+                <label for="priceFilter" style="font-weight: bold;">
+                    Max Price: $<span id="priceValue">300</span>
+                </label>
+                <input type="range" id="priceFilter" min="10" max="500" value="300" step="10" style="width: 100%; margin-top: 0.5rem; accent-color: #1a1a1a;">
+            </div>
+        </section>
+
+        <section class="product-grid" id="productGrid">
+            <div class="empty-catalog">Loading collection from database...</div>
+        </section>
+    </main>
+
+    <div id="quickModal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">✖</span>
+            <img id="modalImg" class="modal-img" src="" alt="Frame">
+            <h2 id="modalTitle" style="margin-bottom: 0.5rem;"></h2>
+            <p id="modalMeta" style="color: #777; text-transform: uppercase; font-size: 0.9rem; margin-bottom: 1rem;"></p>
+            <h2 id="modalPrice" style="color: #27ae60; margin-bottom: 1.5rem;"></h2>
+            <p style="color: #555; font-size: 0.9rem; margin-bottom: 1.5rem; line-height: 1.5;">These premium frames are crafted for all-day comfort and durability. Bring this exact frame into the clinic to have your prescription lenses installed.</p>
+            <span id="modalTempId" style="display:none;"></span>
+            <button class="btn-cart" style="width: 100%; padding: 1rem; font-size: 1.1rem;" onclick="addToCartFromModal(event)">Add to Cart</button>
+        </div>
+    </div>
+
+    <script>
+if (!localStorage.getItem("user")) window.location.href = "login.html";
+
+let allProducts = []; 
+
+async function fetchCatalog() {
+    try {
+        const response = await fetch('inventory_api.php');
+        const result = await response.json();
+        
+        if (result.status === "success") {
+            allProducts = result.data; 
+            renderProducts(allProducts); 
+        }
+    } catch (error) {
+        console.error("Database fetch failed:", error);
+    }
+}
+
+function renderProducts(productsToDisplay) {
+    const grid = document.getElementById('productGrid');
+    grid.innerHTML = ''; 
+
+    if (productsToDisplay.length === 0) {
+        grid.innerHTML = '<div class="empty-catalog">No frames match your current filters.</div>';
+        return;
+    }
+
+    productsToDisplay.forEach(product => {
+        const imgUrl = product.image_url ? product.image_url : 'https://via.placeholder.com/250x180?text=No+Image';
+        
+        grid.innerHTML += `
+            <div class="product-card">
+                <div class="img-container">
+                    <img src="${imgUrl}" alt="${product.name}" class="product-image" id="img-${product.id}" onerror="this.src='https://via.placeholder.com/250x180?text=Error'">
+                </div>
+                <h3 class="product-title">${product.name}</h3>
+                <div class="product-meta">${product.shape} • ${product.material}</div>
+                <div class="product-price">$${product.price}</div>
+                
+                <div class="btn-group">
+                    <button class="btn-quick" onclick="openModal(${product.id}, '${product.name}', '${product.shape} • ${product.material}', ${product.price}, '${imgUrl}')">Quick View</button>
+                    <button class="btn-cart" onclick="addToCart(${product.id}, '${product.name}', ${product.price}, '${imgUrl}', event)">Add</button>
+                </div>
+            </div>
+        `;
+    });
+
+    applyTiltEffect();
+}
+
+
+function applyTiltEffect() {
+    const containers = document.querySelectorAll(".img-container");
+
+    containers.forEach(container => {
+        const img = container.querySelector(".product-image");
+
+        container.addEventListener("mousemove", (e) => {
+            const rect = container.getBoundingClientRect();
+
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+
+            const rotateX = ((y - centerY) / centerY) * 10;
+            const rotateY = ((x - centerX) / centerX) * 14;
+
+            img.style.transform = `
+                scale(1.08)
+                rotateX(${-rotateX}deg)
+                rotateY(${rotateY}deg)
+            `;
+        });
+
+        container.addEventListener("mouseleave", () => {
+            img.style.transform = "scale(1) rotateX(0) rotateY(0)";
+        });
+    });
+}
+
+
+
+function openModal(id, name, meta, price, imgUrl) {
+    document.getElementById('modalImg').src = imgUrl;
+    document.getElementById('modalTitle').textContent = name;
+    document.getElementById('modalMeta').textContent = meta;
+    document.getElementById('modalPrice').textContent = "$" + price;
+    document.getElementById('modalTempId').textContent = id; 
+    
+    const modal = document.getElementById('quickModal');
+    modal.style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById('quickModal').style.display = "none";
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('quickModal');
+    if (event.target == modal) modal.style.display = "none";
+}
+
+function addToCartFromModal(event) {
+    const id = document.getElementById('modalTempId').textContent;
+    const name = document.getElementById('modalTitle').textContent;
+    const price = document.getElementById('modalPrice').textContent.replace('$', '');
+    const imgUrl = document.getElementById('modalImg').src;
+    
+    closeModal(); 
+    
+    setTimeout(() => {
+        addToCart(id, name, price, imgUrl, event, true);
+    }, 100);
+}
+
+
+
+function addToCart(id, name, price, imgUrl, event, isFromModal = false) {
+    let cart = JSON.parse(localStorage.getItem('visionflow_cart')) || [];
+    cart.push({ id, name, price, img_url: imgUrl });
+    localStorage.setItem('visionflow_cart', JSON.stringify(cart));
+
+    const cartIcon = document.getElementById('cartIcon');
+    const targetRect = cartIcon.getBoundingClientRect(); 
+    
+    let startRect;
+    if (isFromModal) {
+        startRect = { left: window.innerWidth/2 - 100, top: window.innerHeight/2 - 100, width: 200, height: 200 };
+    } else {
+        const originalImage = document.getElementById(`img-${id}`);
+        startRect = originalImage.getBoundingClientRect();
+    }
+
+    const flyingImg = document.createElement('img');
+    flyingImg.src = imgUrl;
+    flyingImg.className = 'flying-img';
+    
+    flyingImg.style.left = startRect.left + 'px';
+    flyingImg.style.top = startRect.top + 'px';
+    flyingImg.style.width = startRect.width + 'px';
+    flyingImg.style.height = startRect.height + 'px';
+    
+    document.body.appendChild(flyingImg);
+
+    flyingImg.offsetHeight; 
+
+    flyingImg.style.left = (targetRect.left + 10) + 'px';
+    flyingImg.style.top = (targetRect.top + 10) + 'px';
+    flyingImg.style.width = '20px';
+    flyingImg.style.height = '20px';
+    flyingImg.style.opacity = '0.3'; 
+    flyingImg.style.transform = 'rotate(15deg)'; 
+
+    setTimeout(() => {
+        flyingImg.remove();
+        updateCartCount();
+        
+        cartIcon.style.transform = 'scale(1.3)';
+        setTimeout(() => cartIcon.style.transform = 'scale(1)', 200);
+    }, 800);
+}
+
+function updateCartCount() {
+    let cart = JSON.parse(localStorage.getItem('visionflow_cart')) || [];
+    document.getElementById('cartCount').textContent = cart.length;
+}
+
+
+
+function applyFilters() {
+    const shape = document.getElementById('shapeFilter').value.toLowerCase();
+    const material = document.getElementById('materialFilter').value.toLowerCase();
+    const maxPrice = parseFloat(document.getElementById('priceFilter').value);
+
+    document.getElementById('priceValue').textContent = maxPrice;
+
+    const filteredProducts = allProducts.filter(p => {
+        const matchShape = (shape === 'all') || (p.shape.toLowerCase() === shape);
+        const matchMaterial = (material === 'all') || (p.material.toLowerCase() === material);
+        const matchPrice = parseFloat(p.price) <= maxPrice;
+        return matchShape && matchMaterial && matchPrice;
+    });
+
+    renderProducts(filteredProducts);
+}
+
+document.getElementById('shapeFilter').addEventListener('change', applyFilters);
+document.getElementById('materialFilter').addEventListener('change', applyFilters);
+document.getElementById('priceFilter').addEventListener('input', applyFilters);
+
+
+
+let currentLang = localStorage.getItem('visionflow_lang') || 'en';
+let translations = {};
+
+async function loadTranslations() {
+    try {
+        const response = await fetch('translations.json');
+        translations = await response.json();
+        applyTranslations(); 
+    } catch (error) {
+        console.error("Failed to load translations:", error);
+    }
+}
+
+function applyTranslations() {
+    const elements = document.querySelectorAll('[data-i18n]');
+    
+    elements.forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[currentLang] && translations[currentLang][key]) {
+            el.textContent = translations[currentLang][key];
+        }
+    });
+
+    const toggleBtn = document.getElementById('langToggle');
+    if (toggleBtn && translations[currentLang]) {
+        toggleBtn.textContent = translations[currentLang]['lang_toggle_btn'];
+    }
+}
+
+function toggleLanguage() {
+    currentLang = currentLang === 'en' ? 'ja' : 'en';
+    localStorage.setItem('visionflow_lang', currentLang);
+    applyTranslations();
+}
+
+
+
+loadTranslations();
+updateCartCount();
+fetchCatalog();
+
+</script>
+</body>
+</html>

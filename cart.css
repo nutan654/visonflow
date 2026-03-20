@@ -1,0 +1,139 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    color: #333;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.cart-container {
+    background: white;
+    width: 100%;
+    max-width: 800px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    padding: 2rem;
+}
+
+/* Top Bar */
+.cart-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.cart-top button {
+    background: #f1f1f1;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #333;
+    transition: 0.3s;
+}
+
+.cart-top button:hover {
+    background: #e2e2e2;
+}
+
+.cart-top h1 {
+    font-size: 1.8rem;
+    color: #1a1a1a;
+}
+
+/* Cart Items */
+.cart-item {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-img {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.cart-details {
+    flex-grow: 1;
+}
+
+.cart-details h3 {
+    font-size: 1.2rem;
+    color: #1a1a1a;
+    margin-bottom: 0.4rem;
+}
+
+.cart-details button {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+.cart-details button:hover {
+    text-decoration: underline;
+}
+
+.cart-price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #27ae60;
+}
+
+/* Empty State */
+.empty-cart {
+    text-align: center;
+    padding: 3rem;
+    color: #777;
+    font-size: 1.1rem;
+}
+
+/* Summary Section */
+.cart-summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid #1a1a1a;
+}
+
+.cart-summary h2 {
+    font-size: 1.5rem;
+}
+
+.cart-summary button {
+    background: #f1c40f;
+    color: #1a1a1a;
+    border: none;
+    padding: 1rem 2.5rem;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.cart-summary button:hover {
+    background: #1a1a1a;
+    color: white;
+}

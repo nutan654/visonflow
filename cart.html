@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>VisionFlow Cart</title>
+
+    <link rel="stylesheet" href="cart.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="cart-container">
+
+    <div class="cart-top">
+        <button onclick="window.location.href='index.html'">⬅ Back</button>
+        <h1>Your Cart 🛒</h1>
+    </div>
+
+    <div id="cartItems"></div>
+
+    <div class="cart-summary">
+        <h2>Total: $<span id="totalPrice">0</span></h2>
+        <button onclick="checkout()">Checkout</button>
+    </div>
+
+</div>
+
+<script src="cart.js"></script>
+
+</body>
+</html>

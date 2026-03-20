@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Inventory Management</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 1000px; margin: 2rem auto; background: white; 
+            padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .form-section { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #1a1a1a; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
+        .form-group label { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4rem; color: #555; }
+        .form-group input, .form-group select { padding: 0.8rem; border: 1px solid #ccc; border-radius: 6px; }
+        .btn-add { background: #1a1a1a; color: white; padding: 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.3s; }
+        .btn-add:hover { background: #f1c40f; color: #1a1a1a; }
+        
+        /* Table Styling */
+        table { width: 100%; border-collapse: collapse; margin-top: 1.5rem; }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #555; font-size: 0.85rem; text-transform: uppercase; }
+        .product-img { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+        
+        /* Action Buttons */
+        .btn-edit { background: #3498db; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; margin-right: 0.5rem;}
+        .btn-delete { background: #e74c3c; color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html" class="active">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <h2>Inventory Management</h2>
+               
+
+            <form id="addProductForm" class="form-section">
+                <h3 style="margin-bottom: 1rem;">➕ Add New Eyewear</h3>
+                <div class="grid-3">
+                    <div class="form-group"><label>Frame Name</label><input type="text" id="name" required></div>
+                    <div class="form-group">
+                        <label>Shape</label>
+                        <select id="shape" required><option>Aviator</option><option>Round</option><option>Square</option><option>Cat-Eye</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Material</label>
+                        <select id="material" required><option>Acetate</option><option>Metal</option><option>Titanium</option></select>
+                    </div>
+                </div>
+                <div class="grid-3">
+                    <div class="form-group"><label>Price ($)</label><input type="number" id="price" step="0.01" required></div>
+                    <div class="form-group" style="grid-column: span 2;"><label>Image URL</label><input type="url" id="image_url" placeholder="https://..." required></div>
+                </div>
+                <button type="submit" class="btn-add">Add to Database</button>
+            </form>
+
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Shape/Material</th>
+                        <th>Price</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <tr><td colspan="5" style="text-align:center;">Loading inventory...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        async function loadInventory() {
+            const tbody = document.getElementById('tableBody');
+            try {
+                const response = await fetch('inventory_api.php');
+                const result = await response.json();
+                
+                if (result.data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No products in database.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                result.data.forEach(item => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><img src="${item.image_url}" class="product-img" alt="Frame"></td>
+                            <td style="font-weight:bold;">${item.name}</td>
+                            <td>${item.shape} <br><span style="font-size:0.8rem; color:#888;">${item.material}</span></td>
+                            <td style="color:#27ae60; font-weight:bold;">$${item.price}</td>
+                            <td>
+                                <button class="btn-edit" onclick="editProduct(${item.id}, '${item.name}', ${item.price})">Edit</button>
+                                <button class="btn-delete" onclick="deleteProduct(${item.id})">Delete</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        
+        document.getElementById('addProductForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const productData = {
+                name: document.getElementById('name').value,
+                shape: document.getElementById('shape').value,
+                material: document.getElementById('material').value,
+                price: document.getElementById('price').value,
+                image_url: document.getElementById('image_url').value
+            };
+
+            await fetch('inventory_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(productData)
+            });
+            
+            document.getElementById('addProductForm').reset();
+            loadInventory(); 
+        });
+
+       
+        async function editProduct(id, currentName, currentPrice) {
+            
+            const newName = prompt("Update Product Name:", currentName);
+            const newPrice = prompt("Update Price ($):", currentPrice);
+
+            if (newName && newPrice) {
+                await fetch('inventory_api.php', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, name: newName, price: parseFloat(newPrice) })
+                });
+                loadInventory(); 
+            }
+        }
+
+        
+        async function deleteProduct(id) {
+            if (confirm("Are you sure you want to permanently delete this product?")) {
+                await fetch('inventory_api.php', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id })
+                });
+                loadInventory(); 
+            }
+        }
+
+       
+        loadInventory();
+    </script>
+</body>
+</html>

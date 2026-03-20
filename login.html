@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>VisionFlow Login</title>
+
+    <link rel="stylesheet" href="login.css">
+
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="login-container">
+
+        <div class="login-box">
+
+            <h1 class="logo">VisionFlow</h1>
+            <h2>Welcome Back</h2>
+            <p class="subtitle">Login to continue your experience</p>
+
+            <input type="text" id="username" placeholder="Username">
+            <div class="password-container">
+               <input type="password" id="password" placeholder="Password">
+                <span class="toggle-password" onclick="togglePassword()"></span>
+                </div>
+            <button onclick="login()">Login</button>
+
+        </div>
+
+    </div>
+
+    <script src="app.js"></script>
+
+</body>
+</html>
