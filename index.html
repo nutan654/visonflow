@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionFlow | Catalog</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-actions { display: flex; gap: 0.6rem; align-items: center; }
+  .icon-btn {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-soft);
+    padding: 0.55rem 1rem; border-radius: 999px; cursor: pointer; font-weight: 600; font-size: 0.85rem;
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .icon-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+  .user-chip { color: var(--ink-faint); font-size: 0.85rem; font-weight: 500; }
+</style>
+</head>
+<body>
+
+<nav class="sidebar">
+  <div class="logo">VisionFlow</div>
+  <ul class="nav-links">
+    <li><a href="index.html" class="active" data-i18n="nav_catalog">Virtual Catalog</a></li>
+    <li><a href="inventory.html" data-i18n="nav_inventory">Inventory Dashboard</a></li>
+    <li><a href="patients.html" data-i18n="nav_patients">Patient Records</a></li>
+    <li><a href="prescriptions.html" data-i18n="nav_rx">Input Prescription</a></li>
+    <li><a href="trends.html" data-i18n="nav_trends">Sales Trends</a></li>
+    <li><a href="invoices.html">AR / Invoices</a></li>
+    <li><a href="vendors.html">AP / Vendors</a></li>
+    <li><a href="reconciliation.html">Reconciliation</a></li>
+    <li><a href="financial-dashboard.html">Financial Reports</a></li>
+    <li><a href="audit-log.html">Audit Trail</a></li>
+  </ul>
+</nav>
+
+<main class="content">
+
+  <div class="topbar">
+    <span id="userName" class="user-chip">VisionFlow</span>
+    <div class="topbar-actions">
+      <button id="langToggle" class="icon-btn" onclick="toggleLanguage()">🇯🇵 日本語</button>
+      <button class="icon-btn danger" onclick="logout()">Logout</button>
+      <div class="cart" id="cartIcon" onclick="window.location.href='cart.html'">
+        🛒 <span id="cartCount">0</span>
+      </div>
+    </div>
+  </div>
+
+  <header class="page-head">
+    <h1 data-i18n="title_main">Eyewear Collection</h1>
+    <p data-i18n="subtitle_main">Browse the current collection and filter by shape, material, or price.</p>
+  </header>
+
+  <section class="filters">
+    <div class="filter-group">
+      <label for="shapeFilter">Shape</label>
+      <select id="shapeFilter">
+        <option value="all">All Shapes</option>
+        <option value="round">Round</option>
+        <option value="square">Square</option>
+        <option value="aviator">Aviator</option>
+        <option value="cat-eye">Cat-Eye</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="materialFilter">Material</label>
+      <select id="materialFilter">
+        <option value="all">All Materials</option>
+        <option value="acetate">Acetate</option>
+        <option value="metal">Metal</option>
+        <option value="titanium">Titanium</option>
+      </select>
+    </div>
+    <div class="filter-group" style="flex-grow: 1; min-width: 220px;">
+      <label for="priceFilter">Max Price: $<span id="priceValue">300</span></label>
+      <input type="range" id="priceFilter" min="10" max="500" value="300" step="10">
+    </div>
+  </section>
+
+  <section class="product-grid" id="productGrid">
+    <div class="empty-catalog">Loading collection from database…</div>
+  </section>
+</main>
+
+<div id="quickModal" class="modal">
+  <div class="modal-content">
+    <span class="close-btn" onclick="closeModal()">✕</span>
+    <img id="modalImg" class="modal-img" src="" alt="Frame">
+    <h2 id="modalTitle" style="margin-bottom: 0.35rem;"></h2>
+    <p id="modalMeta" style="color: var(--ink-faint); text-transform: uppercase; font-size: 0.78rem; letter-spacing: 0.02em; margin-bottom: 0.75rem;"></p>
+    <h2 id="modalPrice" style="color: var(--success); margin-bottom: 1.25rem;"></h2>
+    <p style="color: var(--ink-soft); font-size: 0.88rem; margin-bottom: 1.5rem; line-height: 1.5;">
+      These premium frames are crafted for all-day comfort and durability. Bring this exact frame into the clinic to have your prescription lenses installed.
+    </p>
+    <span id="modalTempId" style="display:none;"></span>
+    <button class="btn-cart" style="width: 100%; padding: 0.85rem; font-size: 0.95rem;" onclick="addToCartFromModal(event)">Add to Cart</button>
+  </div>
+</div>
+
+<script>
+if (!localStorage.getItem("user")) window.location.href = "login.html";
+
+let allProducts = [];
+
+async function fetchCatalog() {
+  try {
+    const response = await fetch('inventory_api.php');
+    const result = await response.json();
+    if (result.status === "success") {
+      allProducts = result.data;
+      renderProducts(allProducts);
+    }
+  } catch (error) {
+    console.error("Database fetch failed:", error);
+    document.getElementById('productGrid').innerHTML =
+      '<div class="empty-catalog">Couldn\'t reach the catalog service. Check that the web/db containers are running.</div>';
+  }
+}
+
+function renderProducts(productsToDisplay) {
+  const grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+
+  if (productsToDisplay.length === 0) {
+    grid.innerHTML = '<div class="empty-catalog">No frames match your current filters.</div>';
+    return;
+  }
+
+  productsToDisplay.forEach(product => {
+    const imgUrl = product.image_url ? product.image_url : 'https://via.placeholder.com/250x180?text=No+Image';
+    grid.innerHTML += `
+      <div class="product-card">
+        <div class="img-container">
+          <img src="${imgUrl}" alt="${product.name}" class="product-image" id="img-${product.id}" onerror="this.src='https://via.placeholder.com/250x180?text=No+Image'">
+        </div>
+        <h3 class="product-title">${product.name}</h3>
+        <div class="product-meta">${product.shape} • ${product.material}</div>
+        <div class="product-price">$${product.price}</div>
+        <div class="btn-group">
+          <button class="btn-quick" onclick="openModal(${product.id}, '${product.name}', '${product.shape} • ${product.material}', ${product.price}, '${imgUrl}')">Quick View</button>
+          <button class="btn-cart" onclick="addToCart(${product.id}, '${product.name}', ${product.price}, '${imgUrl}', event)">Add</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function openModal(id, name, meta, price, imgUrl) {
+  document.getElementById('modalImg').src = imgUrl;
+  document.getElementById('modalTitle').textContent = name;
+  document.getElementById('modalMeta').textContent = meta;
+  document.getElementById('modalPrice').textContent = "$" + price;
+  document.getElementById('modalTempId').textContent = id;
+  document.getElementById('quickModal').style.display = "flex";
+}
+
+function closeModal() {
+  document.getElementById('quickModal').style.display = "none";
+}
+
+window.onclick = function(event) {
+  const modal = document.getElementById('quickModal');
+  if (event.target == modal) modal.style.display = "none";
+};
+
+function addToCartFromModal(event) {
+  const id = document.getElementById('modalTempId').textContent;
+  const name = document.getElementById('modalTitle').textContent;
+  const price = document.getElementById('modalPrice').textContent.replace('$', '');
+  const imgUrl = document.getElementById('modalImg').src;
+  closeModal();
+  setTimeout(() => addToCart(id, name, price, imgUrl, event, true), 100);
+}
+
+function addToCart(id, name, price, imgUrl, event, isFromModal = false) {
+  let cart = JSON.parse(localStorage.getItem('visionflow_cart')) || [];
+  cart.push({ id, name, price, img_url: imgUrl });
+  localStorage.setItem('visionflow_cart', JSON.stringify(cart));
+
+  const cartIcon = document.getElementById('cartIcon');
+  updateCartCount();
+  cartIcon.style.transition = 'transform 0.2s ease';
+  cartIcon.style.transform = 'scale(1.15)';
+  setTimeout(() => cartIcon.style.transform = 'scale(1)', 200);
+}
+
+function updateCartCount() {
+  let cart = JSON.parse(localStorage.getItem('visionflow_cart')) || [];
+  document.getElementById('cartCount').textContent = cart.length;
+}
+
+function applyFilters() {
+  const shape = document.getElementById('shapeFilter').value.toLowerCase();
+  const material = document.getElementById('materialFilter').value.toLowerCase();
+  const maxPrice = parseFloat(document.getElementById('priceFilter').value);
+  document.getElementById('priceValue').textContent = maxPrice;
+
+  const filteredProducts = allProducts.filter(p => {
+    const matchShape = (shape === 'all') || (p.shape.toLowerCase() === shape);
+    const matchMaterial = (material === 'all') || (p.material.toLowerCase() === material);
+    const matchPrice = parseFloat(p.price) <= maxPrice;
+    return matchShape && matchMaterial && matchPrice;
+  });
+
+  renderProducts(filteredProducts);
+}
+
+document.getElementById('shapeFilter').addEventListener('change', applyFilters);
+document.getElementById('materialFilter').addEventListener('change', applyFilters);
+document.getElementById('priceFilter').addEventListener('input', applyFilters);
+
+function logout() {
+  localStorage.removeItem("user");
+  window.location.href = "login.html";
+}
+
+let currentLang = localStorage.getItem('visionflow_lang') || 'en';
+let translations = {};
+
+async function loadTranslations() {
+  try {
+    const response = await fetch('translations.json');
+    translations = await response.json();
+    applyTranslations();
+  } catch (error) {
+    console.error("Failed to load translations:", error);
+  }
+}
+
+function applyTranslations() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (translations[currentLang] && translations[currentLang][key]) {
+      el.textContent = translations[currentLang][key];
+    }
+  });
+  const toggleBtn = document.getElementById('langToggle');
+  if (toggleBtn && translations[currentLang]) {
+    toggleBtn.textContent = translations[currentLang]['lang_toggle_btn'];
+  }
+}
+
+function toggleLanguage() {
+  currentLang = currentLang === 'en' ? 'ja' : 'en';
+  localStorage.setItem('visionflow_lang', currentLang);
+  applyTranslations();
+}
+
+const role = localStorage.getItem("role");
+if (role) document.getElementById("userName").textContent = "Hi, " + role;
+
+loadTranslations();
+updateCartCount();
+fetchCatalog();
+</script>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Financial Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-container { max-width: 1200px; margin: 2rem auto; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .kpi-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .kpi-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 1.3rem; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .kpi-card .label { font-size: 0.78rem; text-transform: uppercase; color: #888; margin-bottom: 0.4rem; }
+        .kpi-card .value { font-size: 1.5rem; font-weight: bold; color: #1a1a1a; }
+        .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .chart-box { background: #f8f9fa; border-radius: 10px; padding: 1.2rem; }
+        .chart-box h4 { margin-bottom: 0.8rem; font-size: 0.95rem; }
+        .export-row { text-align: right; margin-top: -0.5rem; margin-bottom: 0.5rem; }
+        .btn-export { background: #3498db; color: white; border: none; padding: 0.4rem 0.9rem; border-radius: 6px; cursor: pointer; font-size: 0.78rem; }
+        .btn-export:hover { background: #2980b9; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            <li><a href="invoices.html">AR / Invoices</a></li>
+            <li><a href="vendors.html">AP / Vendors</a></li>
+            <li><a href="reconciliation.html">Reconciliation</a></li>
+            <li><a href="financial-dashboard.html" class="active">Financial Reports</a></li>
+            <li><a href="audit-log.html">Audit Trail</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <h2>Financial Reporting Dashboard</h2>
+            <p style="color:#777; margin-bottom:1.5rem;">Revenue, AR/AP, inventory valuation, and margin — all sourced from the ledgers above.</p>
+
+            <div class="kpi-cards" id="kpiCards">
+                <div class="kpi-card"><div class="label">Total Revenue</div><div class="value">—</div></div>
+                <div class="kpi-card"><div class="label">Outstanding AR</div><div class="value">—</div></div>
+                <div class="kpi-card"><div class="label">Outstanding AP</div><div class="value">—</div></div>
+                <div class="kpi-card"><div class="label">Gross Margin</div><div class="value">—</div></div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-box">
+                    <h4>Revenue Over Time</h4>
+                    <div class="export-row"><button class="btn-export" onclick="exportCsv('revenue')">Export CSV</button></div>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-box">
+                    <h4>AR vs AP Outstanding</h4>
+                    <div class="export-row"><button class="btn-export" onclick="exportCsv('arap')">Export CSV</button></div>
+                    <canvas id="arApChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-box">
+                <h4>Inventory Value Over Time</h4>
+                <div class="export-row"><button class="btn-export" onclick="exportCsv('inventory')">Export CSV</button></div>
+                <canvas id="inventoryChart"></canvas>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function fmtMoney(n) { return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits: 0, maximumFractionDigits: 0}); }
+
+        let summaryData = null;
+
+        function downloadCsv(filename, rows) {
+            const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportCsv(which) {
+            if (!summaryData) return;
+            if (which === 'revenue') {
+                downloadCsv('revenue_by_month.csv', [['Month','Revenue'], ...summaryData.revenue_by_month.map(r => [r.month, r.revenue])]);
+            } else if (which === 'arap') {
+                downloadCsv('ar_ap_outstanding.csv', [['Metric','Amount'], ['Outstanding AR', summaryData.outstanding_ar], ['Outstanding AP', summaryData.outstanding_ap]]);
+            } else if (which === 'inventory') {
+                downloadCsv('inventory_value_by_month.csv', [['Month','Value'], ...summaryData.inventory_value_by_month.map(r => [r.month, r.value])]);
+            }
+        }
+
+        async function loadDashboard() {
+            const res = await fetch('get_financial_summary_api.php');
+            const json = await res.json();
+            if (json.status !== 'success') {
+                alert('Failed to load financial summary: ' + json.message);
+                return;
+            }
+            summaryData = json;
+
+            const cards = document.querySelectorAll('#kpiCards .value');
+            cards[0].textContent = fmtMoney(json.total_revenue);
+            cards[1].textContent = fmtMoney(json.outstanding_ar);
+            cards[2].textContent = fmtMoney(json.outstanding_ap);
+            cards[3].textContent = json.gross_margin_pct !== null ? `${fmtMoney(json.gross_margin)} (${json.gross_margin_pct}%)` : '—';
+
+            new Chart(document.getElementById('revenueChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: json.revenue_by_month.map(r => r.month),
+                    datasets: [{ label: 'Revenue (₹)', data: json.revenue_by_month.map(r => r.revenue), borderColor: '#1a1a1a', backgroundColor: 'rgba(26,26,26,0.08)', fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            new Chart(document.getElementById('arApChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Outstanding AR', 'Outstanding AP'],
+                    datasets: [{ label: '₹', data: [json.outstanding_ar, json.outstanding_ap], backgroundColor: ['#27ae60', '#e74c3c'] }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+
+            new Chart(document.getElementById('inventoryChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: json.inventory_value_by_month.map(r => r.month),
+                    datasets: [{ label: 'Inventory Value (₹)', data: json.inventory_value_by_month.map(r => r.value), borderColor: '#3498db', backgroundColor: 'rgba(52,152,219,0.08)', fill: true, tension: 0.3 }]
+                },
+                options: { responsive: true, plugins: { legend: { display: false } } }
+            });
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>

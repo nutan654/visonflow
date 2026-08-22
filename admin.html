@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Admin Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        .form-group input, .form-group select {
+            padding: 0.8rem;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: #1a1a1a;
+            outline: none;
+        }
+        .submit-btn {
+            background: #1a1a1a;
+            color: white;
+            padding: 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s ease;
+        }
+        .submit-btn:hover {
+            background: #333;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #statusMessage {
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            <li><a href="admin.html" class="active">Add Products (Admin)</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h2>Add New Eyewear</h2>
+                <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+            </div>
+
+            <form id="addProductForm">
+                <div class="form-group">
+                    <label for="name">Frame Name</label>
+                    <input type="text" id="name" placeholder="e.g., The Minimalist" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="shape">Frame Shape</label>
+                    <select id="shape" required>
+                        <option value="round">Round</option>
+                        <option value="square">Square</option>
+                        <option value="aviator">Aviator</option>
+                        <option value="cat-eye">Cat-Eye</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="material">Material</label>
+                    <select id="material" required>
+                        <option value="acetate">Acetate</option>
+                        <option value="metal">Metal</option>
+                        <option value="titanium">Titanium</option>
+                        <option value="wood">Wood</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="price">Price ($)</label>
+                    <input type="number" id="price" min="1" step="0.01" placeholder="e.g., 150.00" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="img">Image URL (Optional)</label>
+                    <input type="text" id="img" placeholder="https://via.placeholder.com/150">
+                </div>
+
+                <button type="submit" class="submit-btn">Add to Inventory</button>
+                <div id="statusMessage"></div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        if (!localStorage.getItem("user")) {
+            window.location.href = "login.html";
+        }
+
+        async function logoutAdmin() {
+            try {
+                await fetch('logout_api.php'); 
+                localStorage.removeItem("user");
+                window.location.href = "login.html";
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        }
+
+        document.getElementById('addProductForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.style.color = "#333";
+            statusDiv.textContent = "Adding product...";
+
+            const newProduct = {
+                name: document.getElementById('name').value,
+                shape: document.getElementById('shape').value,
+                material: document.getElementById('material').value,
+                price: parseFloat(document.getElementById('price').value),
+                img: document.getElementById('img').value
+            };
+
+            try {
+                const response = await fetch('add_product_api.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newProduct)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    statusDiv.style.color = "green";
+                    statusDiv.textContent = "Success: " + result.message;
+                    
+                    document.getElementById('addProductForm').reset();
+                } else {
+                    statusDiv.style.color = "red";
+                    statusDiv.textContent = "Error: " + result.message;
+                }
+            } catch (error) {
+                console.error("Error adding product:", error);
+                statusDiv.style.color = "red";
+                statusDiv.textContent = "Network error. Make sure XAMPP is running.";
+            }
+        });
+    </script>
+</body>
+</html>

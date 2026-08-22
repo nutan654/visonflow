@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VisionFlow | Login</title>
+<link rel="stylesheet" href="login.css">
+</head>
+<body>
+
+<div class="login-container">
+  <div class="login-box">
+    <div class="logo">VisionFlow</div>
+    <h2>Welcome back</h2>
+    <p class="subtitle">Log in to continue to your dashboard.</p>
+
+    <div id="loginError" class="login-error"></div>
+
+    <form id="loginForm" onsubmit="return false;">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="admin" autocomplete="username">
+
+      <label for="password">Password</label>
+      <div class="password-container">
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+        <span class="toggle-password" onclick="togglePassword()">👁</span>
+      </div>
+
+      <button type="submit" onclick="login(event)">Log in</button>
+    </form>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+function togglePassword() {
+  const input = document.getElementById('password');
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+// Override the alert-based error from app.js with an inline message,
+// and give an accurate reason instead of "check if XAMPP is running."
+async function login(event) {
+  if (event) event.preventDefault();
+
+  const errorBox = document.getElementById('loginError');
+  errorBox.style.display = 'none';
+
+  const user = document.getElementById('username').value;
+  const pass = document.getElementById('password').value;
+
+  if (!user || !pass) {
+    errorBox.textContent = 'Please enter both username and password.';
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  try {
+    const response = await fetch('login_api.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    });
+
+    const result = await response.json();
+
+    if (result.status === 'success') {
+      localStorage.setItem('user', 'true');
+      localStorage.setItem('role', result.role);
+      window.location.href = 'index.html';
+    } else {
+      errorBox.textContent = result.message || 'Login failed.';
+      errorBox.style.display = 'block';
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    errorBox.textContent = 'Could not reach the login service. This page needs a PHP + MySQL backend running — it won\'t work on a static host like Vercel.';
+    errorBox.style.display = 'block';
+  }
+}
+</script>
+</body>
+</html>

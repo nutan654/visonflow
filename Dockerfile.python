@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install fastapi uvicorn pandas psycopg2-binary python-multipart
+
+COPY predictor.py reconciliation.py .
+
+EXPOSE 8000
+ENV PORT=8000
+
+# Shell form (not exec form) so $PORT actually expands. Falls back to 8000
+# for local `docker compose up`, matching the existing "8000:8000" mapping.
+CMD uvicorn predictor:app --host 0.0.0.0 --port ${PORT:-8000}

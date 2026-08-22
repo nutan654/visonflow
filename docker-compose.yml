@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.php
+    ports:
+      - "80:80"
+    depends_on:
+      - db
+    volumes:
+      - .:/var/www/html
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-visionflow_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+      AI_API_BASE: ${AI_API_BASE:-http://localhost:8000}
+
+  ai-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.python
+    ports:
+      - "8000:8000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-visionflow_db}
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASS: ${DB_PASS:-postgres}
+
+  db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      # Postgres (unlike the old MySQL image) refuses to boot with no
+      # password at all, so this always has a value — override it via
+      # .env before deploying anywhere other than your own machine.
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_DB: ${DB_NAME:-visionflow_db}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+
+volumes:
+  db_data:

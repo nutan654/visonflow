@@ -1,0 +1,102 @@
+# Render Blueprint — deploys the PHP frontend and the FastAPI ai-api
+# service, both wired to the existing `teahub-db` Postgres instance
+# (shared with the TeaHub project) instead of provisioning a new
+# database.
+#
+# teahub-db is NOT created by this blueprint — it must already exist
+# in this Render workspace before you deploy this blueprint.
+#
+# REGION: teahub-db lives in Singapore, and Render's private
+# networking only resolves hostnames between services in the SAME
+# region, so both services below are pinned to `region: singapore`.
+#
+# DB_NAME: this points both services at a database literally named
+# `visionflow_db` on the teahub-db instance. If teahub-db's actual
+# database is named something else (e.g. `teahub`), replace the
+# `value: visionflow_db` lines below with:
+#     fromDatabase:
+#       name: teahub-db
+#       property: database
+# so Render fills in the real name automatically instead of the
+# literal string. Using the wrong literal name here is the single
+# most common cause of a "database ... does not exist" connection
+# error on first deploy — double-check it against the teahub-db page
+# in the Render dashboard.
+#
+# SCHEMA COLLISIONS: every VisionFlow table lives in its own
+# `visionflow` Postgres schema (not `public`), so it can never
+# collide with TeaHub's tables of the same name (users, products,
+# customers, invoices, payments, vendors, ...). Every DB connection
+# in the app sets `search_path=visionflow,public`.
+#
+# SELF-HEALING SCHEMA: you do NOT need to run the migrations by hand
+# on Render. Every PHP request and the ai-api's startup both check
+# whether visionflow.customers exists and, if not, apply
+# migrations/000_base_schema.sql and 001_finance_tables.sql
+# automatically (they're idempotent, so this is safe to run on every
+# boot). This is what fixes the
+# 'relation "customers" does not exist' error from a fresh deploy.
+#
+# AI_API_BASE (the ai-api service's public URL) can't be reliably
+# auto-wired here — Render only exposes the bare hostname via
+# `fromService`, not the full https:// URL — so it's `sync: false`.
+# After both services first deploy, copy visionflow-ai-api's public
+# URL from the Render dashboard and paste it into visionflow-web's
+# AI_API_BASE env var, then redeploy visionflow-web.
+#
+# Usage: Render dashboard → New → Blueprint → point at this repo.
+services:
+  - type: web
+    name: visionflow-web
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./Dockerfile.php
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: teahub-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: teahub-db
+          property: port
+      - key: DB_NAME
+        value: visionflow_db
+      - key: DB_USER
+        fromDatabase:
+          name: teahub-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: teahub-db
+          property: password
+      - key: AI_API_BASE
+        sync: false   # paste in visionflow-ai-api's public URL after first deploy
+  - type: web
+    name: visionflow-ai-api
+    runtime: docker
+    region: singapore
+    dockerfilePath: ./Dockerfile.python
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: teahub-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: teahub-db
+          property: port
+      - key: DB_NAME
+        value: visionflow_db
+      - key: DB_USER
+        fromDatabase:
+          name: teahub-db
+          property: user
+      - key: DB_PASS
+        fromDatabase:
+          name: teahub-db
+          property: password

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | Audit Trail</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container {
+            max-width: 1100px; margin: 2rem auto; background: white;
+            padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        }
+        .filter-bar { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; background: #f8f9fa; padding: 1.25rem; border-radius: 8px; border-left: 4px solid #1a1a1a; margin-bottom: 1.5rem; }
+        .filter-bar .form-group { display: flex; flex-direction: column; }
+        .filter-bar label { font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 0.3rem; }
+        .filter-bar input, .filter-bar select { padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; }
+        .btn-add { background: #1a1a1a; color: white; padding: 0.65rem 1.2rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn-add:hover { background: #f1c40f; color: #1a1a1a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }
+        th, td { padding: 0.9rem; text-align: left; border-bottom: 1px solid #eee; vertical-align: top; }
+        th { background: #f8f9fa; color: #555; font-size: 0.8rem; text-transform: uppercase; }
+        .badge { padding: 0.25rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .badge-create { background: #d4edda; color: #155724; }
+        .badge-update { background: #fff3cd; color: #856404; }
+        .badge-delete { background: #f8d7da; color: #721c24; }
+        .diff-cell { font-family: monospace; font-size: 0.78rem; max-width: 280px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; color: #444; }
+        .pagination { display: flex; gap: 0.5rem; margin-top: 1.5rem; align-items: center; }
+        .pagination button { padding: 0.4rem 0.9rem; border: 1px solid #ccc; background: white; border-radius: 6px; cursor: pointer; }
+        .pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+        .empty-state { text-align: center; color: #888; padding: 2rem; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            <li><a href="invoices.html">AR / Invoices</a></li>
+            <li><a href="vendors.html">AP / Vendors</a></li>
+            <li><a href="reconciliation.html">Reconciliation</a></li>
+            <li><a href="financial-dashboard.html">Financial Reports</a></li>
+            <li><a href="audit-log.html" class="active">Audit Trail</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <h2>Audit Trail</h2>
+            <p style="color:#777; margin-bottom: 1.5rem;">Immutable log of every create/update/delete across inventory and pricing records, with before/after state.</p>
+
+            <div class="filter-bar">
+                <div class="form-group">
+                    <label>Table</label>
+                    <select id="filterTable">
+                        <option value="">All</option>
+                        <option value="inventory">inventory</option>
+                        <option value="products">products</option>
+                        <option value="invoices">invoices</option>
+                        <option value="purchase_orders">purchase_orders</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>From</label>
+                    <input type="date" id="filterFrom">
+                </div>
+                <div class="form-group">
+                    <label>To</label>
+                    <input type="date" id="filterTo">
+                </div>
+                <button class="btn-add" onclick="loadLog(1)">Apply Filters</button>
+            </div>
+
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Table</th>
+                        <th>Record</th>
+                        <th>Before</th>
+                        <th>After</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody">
+                    <tr><td colspan="7" class="empty-state">Loading…</td></tr>
+                </tbody>
+            </table>
+
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </main>
+
+    <script>
+        let currentPage = 1;
+
+        function badgeClass(action) {
+            if (action === 'CREATE') return 'badge-create';
+            if (action === 'DELETE') return 'badge-delete';
+            return 'badge-update';
+        }
+
+        function fmt(json) {
+            if (!json) return '—';
+            try {
+                const obj = typeof json === 'string' ? JSON.parse(json) : json;
+                return JSON.stringify(obj, null, 1);
+            } catch (e) {
+                return String(json);
+            }
+        }
+
+        async function loadLog(page = 1) {
+            currentPage = page;
+            const table = document.getElementById('filterTable').value;
+            const from = document.getElementById('filterFrom').value;
+            const to = document.getElementById('filterTo').value;
+
+            const params = new URLSearchParams({ page, page_size: 20 });
+            if (table) params.append('table', table);
+            if (from) params.append('from', from);
+            if (to) params.append('to', to);
+
+            const body = document.getElementById('logBody');
+            body.innerHTML = '<tr><td colspan="7" class="empty-state">Loading…</td></tr>';
+
+            try {
+                const res = await fetch('get_audit_log_api.php?' + params.toString());
+                const json = await res.json();
+
+                if (json.status !== 'success' || !json.data.length) {
+                    body.innerHTML = '<tr><td colspan="7" class="empty-state">No audit entries found.</td></tr>';
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                body.innerHTML = json.data.map(row => `
+                    <tr>
+                        <td>${new Date(row.created_at).toLocaleString()}</td>
+                        <td>${row.username || 'system'}</td>
+                        <td><span class="badge ${badgeClass(row.action)}">${row.action}</span></td>
+                        <td>${row.table_affected}</td>
+                        <td>#${row.record_id}</td>
+                        <td class="diff-cell">${fmt(row.old_value)}</td>
+                        <td class="diff-cell">${fmt(row.new_value)}</td>
+                    </tr>
+                `).join('');
+
+                const p = json.pagination;
+                document.getElementById('pagination').innerHTML = `
+                    <button ${p.page <= 1 ? 'disabled' : ''} onclick="loadLog(${p.page - 1})">← Prev</button>
+                    <span>Page ${p.page} of ${p.total_pages} (${p.total} entries)</span>
+                    <button ${p.page >= p.total_pages ? 'disabled' : ''} onclick="loadLog(${p.page + 1})">Next →</button>
+                `;
+            } catch (e) {
+                body.innerHTML = '<tr><td colspan="7" class="empty-state">Failed to load audit log.</td></tr>';
+            }
+        }
+
+        loadLog(1);
+    </script>
+</body>
+</html>

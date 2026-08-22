@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VisionFlow | AP / Vendors</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container { max-width: 1150px; margin: 2rem auto; background: white; padding: 2.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        .form-section { background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #1a1a1a; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+        .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
+        .form-group label { font-weight: bold; font-size: 0.9rem; margin-bottom: 0.4rem; color: #555; }
+        .form-group input, .form-group select { padding: 0.8rem; border: 1px solid #ccc; border-radius: 6px; }
+        .btn-add { background: #1a1a1a; color: white; padding: 1rem; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; }
+        .btn-add:hover { background: #f1c40f; color: #1a1a1a; }
+        .vendor-card { background: white; border: 1px solid #eee; border-radius: 10px; padding: 1.2rem; margin-bottom: 1rem; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .vendor-card h4 { margin-bottom: 0.4rem; }
+        .vendor-meta { display: flex; gap: 2rem; color: #666; font-size: 0.85rem; margin-bottom: 0.8rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }
+        th, td { padding: 0.7rem; text-align: left; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+        th { background: #f8f9fa; color: #555; font-size: 0.75rem; text-transform: uppercase; }
+        .badge { padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.72rem; font-weight: bold; }
+        .badge-ordered { background: #fff3cd; color: #856404; }
+        .badge-received { background: #d1ecf1; color: #0c5460; }
+        .badge-paid { background: #d4edda; color: #155724; }
+        .badge-cancelled { background: #e2e3e5; color: #383d41; }
+        select.status-select { padding: 0.3rem; border-radius: 4px; border: 1px solid #ccc; font-size: 0.8rem; }
+        h2 { margin-bottom: 0.3rem; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">VisionFlow</div>
+        <ul class="nav-links">
+            <li><a href="index.html">Virtual Catalog</a></li>
+            <li><a href="inventory.html">Inventory Dashboard</a></li>
+            <li><a href="patients.html">Patient Records</a></li>
+            <li><a href="prescriptions.html">Input Prescription</a></li>
+            <li><a href="trends.html">Sales Trends</a></li>
+            <li><a href="invoices.html">AR / Invoices</a></li>
+            <li><a href="vendors.html" class="active">AP / Vendors</a></li>
+            <li><a href="reconciliation.html">Reconciliation</a></li>
+            <li><a href="financial-dashboard.html">Financial Reports</a></li>
+            <li><a href="audit-log.html">Audit Trail</a></li>
+        </ul>
+    </nav>
+
+    <main class="content">
+        <div class="admin-container">
+            <h2>Accounts Payable — Vendors &amp; Purchase Orders</h2>
+            <p style="color:#777; margin-bottom:1.5rem;">Track vendors, purchase orders, and outstanding payables.</p>
+
+            <div class="grid-2">
+                <form id="addVendorForm" class="form-section">
+                    <h3 style="margin-bottom:1rem;">➕ New Vendor</h3>
+                    <div class="form-group"><label>Vendor Name</label><input type="text" id="v_name" required></div>
+                    <div class="form-group"><label>Contact Email</label><input type="email" id="v_email"></div>
+                    <div class="form-group"><label>Payment Terms (days)</label><input type="number" id="v_terms" value="30"></div>
+                    <button type="submit" class="btn-add">Add Vendor</button>
+                </form>
+
+                <form id="addPoForm" class="form-section">
+                    <h3 style="margin-bottom:1rem;">➕ New Purchase Order</h3>
+                    <div class="form-group"><label>Vendor</label><select id="po_vendor" required></select></div>
+                    <div class="form-group"><label>Product Name</label><input type="text" id="po_product" required></div>
+                    <div class="grid-2">
+                        <div class="form-group"><label>Quantity</label><input type="number" id="po_qty" required></div>
+                        <div class="form-group"><label>Unit Cost (₹)</label><input type="number" step="0.01" id="po_cost" required></div>
+                    </div>
+                    <button type="submit" class="btn-add">Create PO</button>
+                </form>
+            </div>
+
+            <h3 style="margin: 1.5rem 0 1rem;">Vendors</h3>
+            <div id="vendorList">Loading…</div>
+        </div>
+    </main>
+
+    <script>
+        function fmtMoney(n) { return '₹' + Number(n).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}); }
+
+        async function loadVendorsIntoSelect() {
+            const res = await fetch('add_vendor_api.php');
+            const json = await res.json();
+            const select = document.getElementById('po_vendor');
+            select.innerHTML = json.data.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            return json.data;
+        }
+
+        async function loadPOsForVendor(vendorId) {
+            const res = await fetch('create_po_api.php?vendor_id=' + vendorId);
+            const json = await res.json();
+            return json.data || [];
+        }
+
+        async function updatePoStatus(poId, status) {
+            const res = await fetch('create_po_api.php', { method: 'PUT', body: JSON.stringify({ id: poId, status }) });
+            const json = await res.json();
+            if (json.status === 'success') { render(); } else { alert('Error: ' + json.message); }
+        }
+
+        async function render() {
+            const vendors = await loadVendorsIntoSelect();
+            const container = document.getElementById('vendorList');
+            if (!vendors.length) {
+                container.innerHTML = '<p style="color:#888;">No vendors yet.</p>';
+                return;
+            }
+
+            let html = '';
+            for (const v of vendors) {
+                const pos = await loadPOsForVendor(v.id);
+                html += `
+                    <div class="vendor-card">
+                        <h4>${v.name}</h4>
+                        <div class="vendor-meta">
+                            <span>Terms: Net ${v.payment_terms_days}</span>
+                            <span>Total PO value: ${fmtMoney(v.total_po_value)}</span>
+                            <span>Outstanding AP: ${fmtMoney(v.outstanding_ap)}</span>
+                        </div>
+                        ${pos.length ? `
+                        <table>
+                            <thead><tr><th>PO #</th><th>Product</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th>Status</th></tr></thead>
+                            <tbody>
+                                ${pos.map(po => `
+                                    <tr>
+                                        <td>${po.po_number}</td>
+                                        <td>${po.product_name}</td>
+                                        <td>${po.quantity}</td>
+                                        <td>${fmtMoney(po.unit_cost)}</td>
+                                        <td>${fmtMoney(po.total_cost)}</td>
+                                        <td>
+                                            <select class="status-select" onchange="updatePoStatus(${po.id}, this.value)">
+                                                <option value="ordered" ${po.status==='ordered'?'selected':''}>Ordered</option>
+                                                <option value="received" ${po.status==='received'?'selected':''}>Received</option>
+                                                <option value="paid" ${po.status==='paid'?'selected':''}>Paid</option>
+                                                <option value="cancelled" ${po.status==='cancelled'?'selected':''}>Cancelled</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>` : '<p style="color:#999; font-size:0.85rem;">No purchase orders yet.</p>'}
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        document.getElementById('addVendorForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                name: document.getElementById('v_name').value,
+                contact_email: document.getElementById('v_email').value,
+                payment_terms_days: parseInt(document.getElementById('v_terms').value || 30),
+            };
+            const res = await fetch('add_vendor_api.php', { method: 'POST', body: JSON.stringify(payload) });
+            const json = await res.json();
+            if (json.status === 'success') { e.target.reset(); render(); } else { alert('Error: ' + json.message); }
+        });
+
+        document.getElementById('addPoForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const payload = {
+                vendor_id: document.getElementById('po_vendor').value,
+                product_name: document.getElementById('po_product').value,
+                quantity: parseInt(document.getElementById('po_qty').value),
+                unit_cost: parseFloat(document.getElementById('po_cost').value),
+            };
+            const res = await fetch('create_po_api.php', { method: 'POST', body: JSON.stringify(payload) });
+            const json = await res.json();
+            if (json.status === 'success') { e.target.reset(); render(); } else { alert('Error: ' + json.message); }
+        });
+
+        render();
+    </script>
+</body>
+</html>

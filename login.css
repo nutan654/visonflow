@@ -1,0 +1,162 @@
+/* ============================================================
+   VisionFlow — login page
+   Matches the shared design system in style.css: one accent,
+   flat surfaces, no gradient text or glow effects.
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --border: #e6e8f0;
+  --ink: #14161f;
+  --ink-soft: #5b5f73;
+  --ink-faint: #9296a8;
+  --accent: #4f46e5;
+  --accent-dark: #3f37c9;
+  --danger: #dc2626;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(20, 22, 31, 0.04), 0 20px 48px rgba(20, 22, 31, 0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  -webkit-font-smoothing: antialiased;
+}
+
+.login-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1.5rem;
+}
+
+.login-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2.75rem 2.5rem;
+  border-radius: var(--radius);
+  width: 340px;
+  max-width: 100%;
+  text-align: left;
+  box-shadow: var(--shadow);
+}
+
+.logo {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.login-box h2 {
+  color: var(--ink);
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.subtitle {
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  margin-bottom: 1.75rem;
+}
+
+.login-box label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.4rem;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  margin-bottom: 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  outline: none;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 0.92rem;
+  transition: border-color .15s ease;
+}
+
+.login-box input::placeholder { color: var(--ink-faint); }
+
+.login-box input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.login-box button {
+  width: 100%;
+  padding: 0.75rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+.login-box button:hover { background: var(--accent-dark); }
+
+.password-container {
+  position: relative;
+  width: 100%;
+}
+
+.password-container input { padding-right: 42px; }
+
+.toggle-password {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--ink-faint);
+  transition: color .15s ease;
+}
+
+.toggle-password:hover { color: var(--accent); }
+
+.login-error {
+  display: none;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: var(--danger);
+  font-size: 0.82rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1.1rem;
+}
