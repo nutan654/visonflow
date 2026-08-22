@@ -46,7 +46,7 @@
 # Usage: Render dashboard → New → Blueprint → point at this repo.
 services:
   - type: web
-    name: visionflow-web
+    name: visionflow-web-nb
     runtime: docker
     region: singapore
     dockerfilePath: ./Dockerfile.php
@@ -76,7 +76,7 @@ services:
       - key: AI_API_BASE
         sync: false   # paste in visionflow-ai-api's public URL after first deploy
   - type: web
-    name: visionflow-ai-api
+    name: visionflow-ai-api-nb
     runtime: docker
     region: singapore
     dockerfilePath: ./Dockerfile.python
