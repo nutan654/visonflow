@@ -10,18 +10,17 @@
 # networking only resolves hostnames between services in the SAME
 # region, so both services below are pinned to `region: singapore`.
 #
-# DB_NAME: this points both services at a database literally named
-# `visionflow_db` on the teahub-db instance. If teahub-db's actual
-# database is named something else (e.g. `teahub`), replace the
-# `value: visionflow_db` lines below with:
-#     fromDatabase:
-#       name: teahub-db
-#       property: database
-# so Render fills in the real name automatically instead of the
-# literal string. Using the wrong literal name here is the single
-# most common cause of a "database ... does not exist" connection
-# error on first deploy — double-check it against the teahub-db page
-# in the Render dashboard.
+# DB_NAME: both services get the actual database name that already
+# exists on the teahub-db instance via `fromDatabase`, rather than a
+# hardcoded literal. VisionFlow doesn't need its own separate database —
+# it lives inside TeaHub's existing database in its own `visionflow`
+# schema (see below), so there's nothing to provision and no risk of
+# a "database ... does not exist" error. If you'd rather VisionFlow
+# have a fully separate database (its own backups, etc.), you can
+# create one by hand (`CREATE DATABASE visionflow_db;` via teahub-db's
+# external psql connection) and switch these two lines back to
+# `value: visionflow_db` — just note some Render Postgres plans/roles
+# restrict CREATE DATABASE, so this isn't guaranteed to work everywhere.
 #
 # SCHEMA COLLISIONS: every VisionFlow table lives in its own
 # `visionflow` Postgres schema (not `public`), so it can never
@@ -47,7 +46,7 @@
 # Usage: Render dashboard → New → Blueprint → point at this repo.
 services:
   - type: web
-    name: visionflow-web-nb
+    name: visionflow-web
     runtime: docker
     region: singapore
     dockerfilePath: ./Dockerfile.php
@@ -63,7 +62,9 @@ services:
           name: teahub-db
           property: port
       - key: DB_NAME
-        value: visionflow_db
+        fromDatabase:
+          name: teahub-db
+          property: database
       - key: DB_USER
         fromDatabase:
           name: teahub-db
@@ -75,7 +76,7 @@ services:
       - key: AI_API_BASE
         sync: false   # paste in visionflow-ai-api's public URL after first deploy
   - type: web
-    name: visionflow-ai-api-nb
+    name: visionflow-ai-api
     runtime: docker
     region: singapore
     dockerfilePath: ./Dockerfile.python
@@ -91,7 +92,9 @@ services:
           name: teahub-db
           property: port
       - key: DB_NAME
-        value: visionflow_db
+        fromDatabase:
+          name: teahub-db
+          property: database
       - key: DB_USER
         fromDatabase:
           name: teahub-db
